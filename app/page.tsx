@@ -1,95 +1,73 @@
-import Image from "next/image";
-import styles from "./page.module.css";
+'use client'
+import "../components/index.css";
+import { endOfDay, startOfDay } from "date-fns";
+import type { DragEndEvent, Range, ResizeEndEvent } from "dnd-timeline";
+import { TimelineContext } from "dnd-timeline";
+import React, { useCallback, useState } from "react";
+import Timeline from "../components/Timeline";
+import { generateItems, generateRows } from "../components/utils";
 
-export default function Home() {
-  return (
-    <main className={styles.main}>
-      <div className={styles.description}>
-        <p>
-          Get started by editing&nbsp;
-          <code className={styles.code}>app/page.tsx</code>
-        </p>
-        <div>
-          <a
-            href="https://vercel.com?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            By{" "}
-            <Image
-              src="/vercel.svg"
-              alt="Vercel Logo"
-              className={styles.vercelLogo}
-              width={100}
-              height={24}
-              priority
-            />
-          </a>
-        </div>
-      </div>
+const DEFAULT_RANGE: Range = {
+	start: startOfDay(new Date()).getTime(),
+	end: endOfDay(new Date()).getTime(),
+};
 
-      <div className={styles.center}>
-        <Image
-          className={styles.logo}
-          src="/next.svg"
-          alt="Next.js Logo"
-          width={180}
-          height={37}
-          priority
-        />
-      </div>
+function App() {
+	const [range, setRange] = useState(DEFAULT_RANGE);
 
-      <div className={styles.grid}>
-        <a
-          href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className={styles.card}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2>
-            Docs <span>-&gt;</span>
-          </h2>
-          <p>Find in-depth information about Next.js features and API.</p>
-        </a>
+	const [rows] = useState(generateRows(5));
+	const [items, setItems] = useState(generateItems(10, range, rows));
 
-        <a
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className={styles.card}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2>
-            Learn <span>-&gt;</span>
-          </h2>
-          <p>Learn about Next.js in an interactive course with&nbsp;quizzes!</p>
-        </a>
+	const onResizeEnd = useCallback((event: ResizeEndEvent) => {
+		const updatedSpan =
+			event.active.data.current.getSpanFromResizeEvent?.(event);
 
-        <a
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className={styles.card}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2>
-            Templates <span>-&gt;</span>
-          </h2>
-          <p>Explore starter templates for Next.js.</p>
-        </a>
+		if (!updatedSpan) return;
 
-        <a
-          href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className={styles.card}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2>
-            Deploy <span>-&gt;</span>
-          </h2>
-          <p>
-            Instantly deploy your Next.js site to a shareable URL with Vercel.
-          </p>
-        </a>
-      </div>
-    </main>
-  );
+		const activeItemId = event.active.id;
+
+		setItems((prev) =>
+			prev.map((item) => {
+				if (item.id !== activeItemId) return item;
+
+				return {
+					...item,
+					span: updatedSpan,
+				};
+			}),
+		);
+	}, []);
+	const onDragEnd = useCallback((event: DragEndEvent) => {
+		const activeRowId = event.over?.id as string;
+		const updatedSpan = event.active.data.current.getSpanFromDragEvent?.(event);
+
+		if (!updatedSpan || !activeRowId) return;
+
+		const activeItemId = event.active.id;
+
+		setItems((prev) =>
+			prev.map((item) => {
+				if (item.id !== activeItemId) return item;
+
+				return {
+					...item,
+					rowId: activeRowId,
+					span: updatedSpan,
+				};
+			}),
+		);
+	}, []);
+
+	return (
+		<TimelineContext
+			range={range}
+			onDragEnd={onDragEnd}
+			onResizeEnd={onResizeEnd}
+			onRangeChanged={setRange}
+		>
+			<Timeline items={items} rows={rows} />
+		</TimelineContext>
+	);
 }
+
+export default App;
