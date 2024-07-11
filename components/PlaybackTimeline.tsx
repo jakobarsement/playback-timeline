@@ -59,7 +59,7 @@ interface TimelineProps {
   items: ItemDefinition[];
 }
 
-function Timeline(props: TimelineProps) {
+function PlaybackTimeline(props: TimelineProps) {
   const { setTimelineRef, style, range } = useTimelineContext();
   const [isPlaying, setIsPlaying] = useState(false);
 
@@ -96,4 +96,4 @@ function Timeline(props: TimelineProps) {
   );
 }
 
-export default Timeline;
+export default PlaybackTimeline;
