@@ -9,8 +9,14 @@ interface TimeCursorProps {
 
 function TimeCursor(props: TimeCursorProps) {
   const timeCursorRef = useRef<HTMLDivElement>(null);
-  const { range, direction, sidebarWidth, valueToPixels } =
-    useTimelineContext();
+  const {
+    range,
+    direction,
+    sidebarWidth,
+    valueToPixels,
+    pixelsToValue,
+    timelineRef,
+  } = useTimelineContext();
   const side = direction === "rtl" ? "right" : "left";
 
   const isVisible =
@@ -21,26 +27,25 @@ function TimeCursor(props: TimeCursorProps) {
 
     const offsetCursor = () => {
       if (!props.isPlaying) return;
-
       if (!timeCursorRef.current) return;
 
-      const timeAtCursor = new Date().getTime(); // Change to cursor selected time when timeline is clicked
+      // The center of the timeline using the left border pixel offset
+      const centerOfTimeline = (range.end - range.start) / 2;
+      const centerOfTimelineOffsetPx = valueToPixels(centerOfTimeline);
 
-      const timeDelta = timeAtCursor - range.start;
-      const timeDeltaInPixels = valueToPixels(timeDelta);
+      // The time beneath the cursor
+      const timeAtCursor = new Date(range.start + centerOfTimeline);
 
-      // This is the cursor position (the offset from the rightmost edge of the "sidebar")
-      const sideDelta = sidebarWidth + timeDeltaInPixels;
+      // The cursor position's offset from the rightmost edge of the "sidebar"
+      const sideDelta = sidebarWidth + centerOfTimelineOffsetPx;
 
-      console.log({ sidebarWidth, timeDeltaInPixels, sideDelta });
-      console.log("time at cursor: ", new Date(timeAtCursor).toLocaleString()); // Using local time for dev; change to zulu in future
-      console.log("isplaying", props.isPlaying);
+      console.log({ timeAtCursor });
       timeCursorRef.current.style[side] = `${sideDelta}px`;
     };
 
     offsetCursor();
 
-    const interval = setInterval(offsetCursor, props.interval || 1000);
+    const interval = setInterval(offsetCursor, props.interval || 100000000);
 
     return () => {
       clearInterval(interval);
@@ -50,6 +55,7 @@ function TimeCursor(props: TimeCursorProps) {
     sidebarWidth,
     props.interval,
     range.start,
+    range.end,
     valueToPixels,
     isVisible,
     props.isPlaying,
