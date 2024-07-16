@@ -1,11 +1,16 @@
 "use client";
 import "../components/index.css";
 import { endOfDay, startOfDay } from "date-fns";
-import type { DragEndEvent, Range, ResizeEndEvent } from "dnd-timeline";
+import type {
+  ItemDefinition,
+  Range,
+  ResizeEndEvent,
+  RowDefinition,
+} from "dnd-timeline";
 import { TimelineContext } from "dnd-timeline";
 import React, { useCallback, useState } from "react";
-import { generateItems, generateRows } from "../components/utils";
 import PlaybackTimeline from "@/components/PlaybackTimeline";
+import { useWheelStrategyAndPlaybackProgression } from "@/components/panStrategies";
 
 const DEFAULT_RANGE: Range = {
   start: startOfDay(new Date()).getTime(),
@@ -15,8 +20,10 @@ const DEFAULT_RANGE: Range = {
 function App() {
   const [range, setRange] = useState(DEFAULT_RANGE);
 
-  const [rows] = useState(generateRows(5));
-  const [items, setItems] = useState(generateItems(10, range, rows));
+  const [rows] = useState<RowDefinition[]>([{ id: "123" }]);
+  const [items, setItems] = useState<ItemDefinition[]>([
+    { id: "123", span: { end: 0, start: 1 }, rowId: "123" },
+  ]);
 
   const onResizeEnd = useCallback((event: ResizeEndEvent) => {
     const updatedSpan =
@@ -37,33 +44,13 @@ function App() {
       })
     );
   }, []);
-  const onDragEnd = useCallback((event: DragEndEvent) => {
-    const activeRowId = event.over?.id as string;
-    const updatedSpan = event.active.data.current.getSpanFromDragEvent?.(event);
-
-    if (!updatedSpan || !activeRowId) return;
-
-    const activeItemId = event.active.id;
-
-    setItems((prev) =>
-      prev.map((item) => {
-        if (item.id !== activeItemId) return item;
-
-        return {
-          ...item,
-          rowId: activeRowId,
-          span: updatedSpan,
-        };
-      })
-    );
-  }, []);
 
   return (
     <TimelineContext
       range={range}
-      onDragEnd={onDragEnd}
       onResizeEnd={onResizeEnd}
       onRangeChanged={setRange}
+      usePanStrategy={useWheelStrategyAndPlaybackProgression}
     >
       <PlaybackTimeline items={items} rows={rows} />
     </TimelineContext>

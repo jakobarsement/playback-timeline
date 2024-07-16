@@ -9,18 +9,20 @@ interface TimeCursorProps {
 
 function TimeCursor(props: TimeCursorProps) {
   const timeCursorRef = useRef<HTMLDivElement>(null);
-  const {
-    range,
-    direction,
-    sidebarWidth,
-    valueToPixels,
-    pixelsToValue,
-    timelineRef,
-  } = useTimelineContext();
+  const { range, direction, sidebarWidth, valueToPixels } =
+    useTimelineContext();
   const side = direction === "rtl" ? "right" : "left";
 
   const isVisible =
     new Date().getTime() > range.start && new Date().getTime() < range.end;
+
+  /**TODOS
+   *
+   * - Stop using interval
+   * - Keep track of timeline viewable range
+   * - Make timeline viewable range adjust as data plays back
+   * - Create playback ability
+   */
 
   useLayoutEffect(() => {
     if (!isVisible) return;
@@ -30,22 +32,24 @@ function TimeCursor(props: TimeCursorProps) {
       if (!timeCursorRef.current) return;
 
       // The center of the timeline using the left border pixel offset
-      const centerOfTimeline = (range.end - range.start) / 2;
-      const centerOfTimelineOffsetPx = valueToPixels(centerOfTimeline);
+      const centerOfTimelineOffsetTime = (range.end - range.start) / 2;
+      const centerOfTimelineOffsetPx = valueToPixels(
+        centerOfTimelineOffsetTime
+      );
 
       // The time beneath the cursor
-      const timeAtCursor = new Date(range.start + centerOfTimeline);
+      const timeAtCursor = new Date(range.start + centerOfTimelineOffsetTime);
 
       // The cursor position's offset from the rightmost edge of the "sidebar"
       const sideDelta = sidebarWidth + centerOfTimelineOffsetPx;
 
-      console.log({ timeAtCursor });
+      console.log({ timeAtCursor, rangeStart: new Date(range.start) });
       timeCursorRef.current.style[side] = `${sideDelta}px`;
     };
 
     offsetCursor();
 
-    const interval = setInterval(offsetCursor, props.interval || 100000000);
+    const interval = setInterval(offsetCursor, props.interval || 1000);
 
     return () => {
       clearInterval(interval);
