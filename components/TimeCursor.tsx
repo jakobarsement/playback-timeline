@@ -1,6 +1,7 @@
 import React, { memo, useRef, useLayoutEffect } from "react";
 
 import { useTimelineContext } from "dnd-timeline";
+import { useZustandStore } from "@/state";
 
 interface TimeCursorProps {
   interval?: number;
@@ -9,6 +10,8 @@ interface TimeCursorProps {
 
 function TimeCursor(props: TimeCursorProps) {
   const timeCursorRef = useRef<HTMLDivElement>(null);
+  const setTimeAtCursor = useZustandStore((state) => state.setTimeAtCursor);
+  const timeAtCursorStoreValue = useZustandStore((state) => state.timeAtCursor);
   const { range, direction, sidebarWidth, valueToPixels } =
     useTimelineContext();
   const side = direction === "rtl" ? "right" : "left";
@@ -18,10 +21,9 @@ function TimeCursor(props: TimeCursorProps) {
 
   /**TODOS
    *
-   * - Stop using interval
-   * - Keep track of timeline viewable range
-   * - Make timeline viewable range adjust as data plays back
    * - Create playback ability
+   * - Keep track of timeline viewable range
+   * - Adjust timeline viewable range as data plays back
    */
 
   useLayoutEffect(() => {
@@ -37,19 +39,23 @@ function TimeCursor(props: TimeCursorProps) {
         centerOfTimelineOffsetTime
       );
 
+      // console.log(1, timeAtCursorStoreValue);
+
       // The time beneath the cursor
       const timeAtCursor = new Date(range.start + centerOfTimelineOffsetTime);
+      setTimeAtCursor(timeAtCursor);
 
+      // console.log(2, timeAtCursorStoreValue);
       // The cursor position's offset from the rightmost edge of the "sidebar"
       const sideDelta = sidebarWidth + centerOfTimelineOffsetPx;
 
-      console.log({ timeAtCursor, rangeStart: new Date(range.start) });
+      // console.log({ timeAtCursor, rangeStart: new Date(range.start) });
       timeCursorRef.current.style[side] = `${sideDelta}px`;
     };
 
     offsetCursor();
 
-    const interval = setInterval(offsetCursor, props.interval || 1000);
+    const interval = setInterval(offsetCursor, props.interval || 100000);
 
     return () => {
       clearInterval(interval);
@@ -63,6 +69,7 @@ function TimeCursor(props: TimeCursorProps) {
     valueToPixels,
     isVisible,
     props.isPlaying,
+    setTimeAtCursor,
   ]);
 
   if (!isVisible) return null;
